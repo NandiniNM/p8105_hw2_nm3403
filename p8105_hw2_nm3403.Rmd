@@ -28,7 +28,7 @@ month_df =
   )
 
 pols = 
-  read_csv("./fivethirtyeight_datasets/pols-month.csv") |>
+  read_csv("./Data/fivethirtyeight_datasets/pols-month.csv") |>
   separate(mon, into = c("year", "month_num", "day"), convert = TRUE) |>
   mutate(
     president = recode(prez_gop, "0" = "dem", "1" = "gop", "2" = "gop")) |>
@@ -41,7 +41,7 @@ We also clean the 538 `snp` data, which contains information related to Standard
 ```{r clean_538_snp}
 snp = 
   read_csv(
-    "./fivethirtyeight_datasets/snp.csv",
+    "./Data/fivethirtyeight_datasets/snp.csv",
     col_types = cols(date = col_date(format = "%m/%d/%y"))) |>
   separate(date, into = c("year", "month_num", "day"), convert = TRUE) |>
   mutate(
@@ -54,7 +54,7 @@ Finally, we tidy the `unemployment` data so that it can be merged with the `pols
 
 ```{r clean_538_unemp}
 unemployment = 
-  read_csv("./fivethirtyeight_datasets/unemployment.csv") |>
+  read_csv("./Data/fivethirtyeight_datasets/unemployment.csv") |>
   rename(year = Year) |>
   pivot_longer(
     Jan:Dec, 
@@ -78,3 +78,74 @@ str(data_538)
 Notice that there are some `NA` values in the `close` and `unemployment` variables, which indicate that the value of these variables is missing at those locations.
 
 Let's talk about the 538 datasets. The `pols` data has `r nrow(pols)` observations and `r ncol(pols)` variables and tells us about the party affiliation distribution (democrat or republican) for governors and senators for a given year from years `r pols |> pull(year) |> min()` to `r pols |> pull(year) |> max()`. It also tells us whether the sitting president was a democrat or republican. The `snp` data has `r nrow(snp)` observations and `r ncol(snp)` variables, ranging from years `r snp |> pull(year) |> min()` to `r snp |> pull(year) |> max()`. The `unemployment` data has `r nrow(unemployment)` observations and `r ncol(unemployment)` variables ranging from years `r unemployment |> pull(year) |> min()` to `r unemployment |> pull(year) |> max()`. In Januarys in or after 1975 in which a democrat was president, the **average unemployment rate was `r filter(data_538, month == "January", year >= 1975, president == "dem") |> pull(unemployment) |> mean() |> round(2)`**.  The average unemployment rate over the same time period in which a republican was president was `r filter(data_538, month == "January", year >= 1975, president == "gop") |> pull(unemployment) |> mean() |> round(2)`.
+
+# Problem 2
+
+Clean the data:
+omit non-data entries (rows with notes / figures; columns containing notes) using arguments in read_excel
+use reasonable variable names
+omit rows that do not include dumpster-specific data
+
+Create a new homes_powered variable applied to every row
+
+```{r}
+
+# Mr.Trash Wheel data
+
+trash_wheel = 
+  read_excel("./Data/202309 Trash Wheel Collection Data.xlsx", sheet = "Mr. Trash Wheel", range = "A2:M586", 
+             col_names = TRUE) |> 
+  janitor::clean_names() |> 
+  mutate(
+    new_homes_powered = (weight_tons*500)/30, # 1 ton of trash =  avg 500 kilowatts, 1 avg household = 30             
+                                              # kilowatts/day
+    wheel = 1
+  )
+
+trash_wheel
+
+# Professor Trash Wheel
+
+prof_trash_wheel = 
+  read_excel("./Data/202309 Trash Wheel Collection Data.xlsx", sheet = "Professor Trash Wheel", range = "A2:L108", 
+             col_names = TRUE) |> 
+  janitor::clean_names() |> 
+  mutate(
+    new_homes_powered = (weight_tons*500)/30,
+    wheel = 2,
+    sports_balls = "NA"
+  )
+
+prof_trash_wheel
+
+# Gwynnda
+
+gwynnda_wheel = 
+  read_excel("./Data/202309 Trash Wheel Collection Data.xlsx", sheet = "Gwynnda Trash Wheel", range = "A2:K157", 
+             col_names = TRUE) |> 
+  janitor::clean_names() |> 
+  mutate(
+    new_homes_powered = (weight_tons*500)/30,
+    wheel = 3,
+    sports_balls = "NA",
+    glass_bottles = "NA"
+  )
+
+gwynnda_wheel
+  
+```
+
+Combine all three trash wheel datasets
+
+```{r}
+
+all_wheels = 
+  rbind(trash_wheel,prof_trash_wheel,gwynnda_wheel) |> 
+  janitor::clean_names() |> 
+  mutate(ID = case_when(wheel == 1 ~ "Mr.Trash Wheel",
+                        wheel == 2 ~ "Professor Trash Wheel",
+                        wheel == 3 ~ "Gwynnda Trash Wheel"))
+
+```
+
+Write a paragraph about these data; you are encouraged to use inline R. Be sure to note the number of observations in the resulting dataset, and give examples of key variables. For available data, what was the total weight of trash collected by Professor Trash Wheel? What was the total number of cigarette butts collected by Gwynnda in July of 2021?
