@@ -81,12 +81,12 @@ Let's talk about the 538 datasets. The `pols` data has `r nrow(pols)` observatio
 
 # Problem 2
 
-Clean the data:
-omit non-data entries (rows with notes / figures; columns containing notes) using arguments in read_excel
-use reasonable variable names
-omit rows that do not include dumpster-specific data
+## Clean the data:
+* Omit non-data entries (rows with notes / figures; columns containing notes) using arguments in read_excel
+* Use reasonable variable names
+* Omit rows that do not include dumpster-specific data
 
-Create a new homes_powered variable applied to every row
+## Create a new homes_powered variable applied to every row
 
 ```{r}
 
@@ -135,7 +135,7 @@ gwynnda_wheel
   
 ```
 
-Combine all three trash wheel datasets
+## Combine all three trash wheel datasets
 
 ```{r}
 
@@ -158,7 +158,7 @@ The total number of cigarette butts collected by Gwynnda in July of 2021 is `r f
 
 # Problem 3
 
-Import, clean, and tidy the dataset of baseline demographics
+## Import, clean, and tidy the dataset of baseline demographics
 
 ```{r}
 
@@ -186,8 +186,6 @@ demo =
     ) |> 
   filter(age_at_onset != ".")
 
-
-nrow(filter(demo,sex == "female", apoe4 == "Carrier"))/nrow(filter(demo,sex == "female"))
 ```
 
 By default, R read in the first row as the column names for the dataset during the initial import. However,
@@ -199,11 +197,12 @@ In total, `r nrow(raw_demo)` participants were recruited, and among these select
 
 The average baseline age is `r filter(demo) |> pull(current_age) |> mean() |> round(2)` years.
 
-The proportion of women in the study that are APOE4 carriers is `nrow(filter(demo,sex == "female", apoe4 == "Carrier"))/nrow(filter(demo,sex == "female"))`.
+The proportion of women in the study that are APOE4 carriers is `r round(nrow(filter(demo,sex == "female", apoe4 == "Carrier"))/nrow(filter(demo,sex == "female")), digits = 2)`.
 
-Import, clean, and tidy the dataset of longitudinally observed biomarker values
+## Import, clean, and tidy the dataset of longitudinally observed biomarker values
 
 ```{r}
+
 raw_amyloid = 
   read_csv(file = "./Data/data_mci/mci_amyloid.csv", col_names = FALSE)[-1,] |>
   janitor::row_to_names(1, remove_rows_above = FALSE) |> 
@@ -217,4 +216,40 @@ amyloid = raw_amyloid |>
 
 The same steps for removing the first row and using the second row as the column names for the `demo` dataset was employed for the `amyloid` dataset as well. The original dataset contained missing values in several rows. Before removing the rows with missing values, there were `r nrow(raw_amyloid)` observations in the dataset. After removng the missing values, there are `r nrow(amyloid)` in the dataset. The `amyloid` dataset contains measurements at the baseline, time_2, time_4, time_6, and time_8 for the participants of the study.
 
-Check whether some participants appear in only the baseline or amyloid datasets, and comment on your findings. Combine the demographic and biomarker datasets so that only participants who appear in both datasets are retained, and briefly describe the resulting dataset; export the result as a CSV to your data directory
+## Checking for overlap in participants
+
+```{r}
+
+isolate_demo = 
+  anti_join(demo, amyloid, by = "id")
+
+isolate_amyloid =
+  anti_join(amyloid, demo, by = "id")
+  
+```
+
+The number of participants that only appear in the baseline (`demo`) dataset is `r nrow(isolate_demo)`.
+
+The number of participants that only appear in the amyloid (`amyloid`) dataset is `r nrow(isolate_amyloid)`.
+
+## Combine the demographic and biomarker datasets so that only participants who appear in both datasets are retained.
+
+```{r}
+
+demo_amyloid_both = 
+  inner_join(demo,amyloid, by = "id")
+
+```
+
+The number of participants that appear in both datasets, baseline and amyloid, is `r nrow(demo_amyloid_both)`.
+
+The average baseline age of the participants is `r filter(demo_amyloid_both) |> pull(current_age) |> mean() |> round(2)` years. 
+
+The proportion of participants that were identified as Carriers for APOE4 is `r round(nrow(filter(demo_amyloid_both, apoe4 == "Carrier"))/nrow(filter(demo_amyloid_both, apoe4 == "Non-carrier")), digits = 2)`.
+
+## Export the result as a CSV to your data directory
+
+```{r}
+write_csv(demo_amyloid_both, "data/demo_amyloid_combined.csv")
+```
+
