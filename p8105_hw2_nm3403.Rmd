@@ -146,6 +146,67 @@ all_wheels =
                         wheel == 2 ~ "Professor Trash Wheel",
                         wheel == 3 ~ "Gwynnda Trash Wheel"))
 
+filter(all_wheels, wheel == 3, year == 2021, month == "July") |> pull(cigarette_butts) |> sum()
+
 ```
 
-Write a paragraph about these data; you are encouraged to use inline R. Be sure to note the number of observations in the resulting dataset, and give examples of key variables. For available data, what was the total weight of trash collected by Professor Trash Wheel? What was the total number of cigarette butts collected by Gwynnda in July of 2021?
+The `all_wheels` dataset combines the information from the `trash_wheel` (Mr.Trash Wheel), `prof_trash_wheel` (Professor Trash Wheel), and `gwynnda_wheel` (Gwynnda Trash Wheel) datasets. The total number of observations in the final dataset is `r nrow(all_wheels)` and the total number of variables is `r ncol(all_wheels)`. The `ID` variable identifies which row comes from which of the three datasets used to make the final dataframe. Key variables that were included in this dataset are weight of the trash in tons (`weight_tons`), the volume of the trash in cubic yards (`volume_cubic_yards`), the date the trash was collected (`date`), and the number of houses that are able to be powered after converting the weight into kilowatts of electricity (`new_homes_powered`). The dataset also included highly prevalent forms of trash such as `wrappers`, `cigarette_butts`, `plastic_bottles`, and `polystyrene`.
+
+The total weight of trash collected by Professor Trash Wheel is `r filter(all_wheels, wheel == 2) |> pull(weight_tons) |> sum() |> round(2)` tons.
+
+The total number of cigarette butts collected by Gwynnda in July of 2021 is `r filter(all_wheels, wheel == 3, year == 2021, month == "July") |> pull(cigarette_butts) |> sum()`.
+
+# Problem 3
+
+Import, clean, and tidy the dataset of baseline demographics
+
+```{r}
+
+raw_demo = 
+  read_csv(file = "./Data/data_mci/MCI_baseline.csv", col_names = FALSE)[-1,]
+
+demo = 
+  read_csv(file = "./Data/data_mci/MCI_baseline.csv", col_names = FALSE)[-1,] |>
+  janitor::row_to_names(1, remove_rows_above = FALSE) |> 
+  janitor::clean_names() |> 
+    mutate(
+      current_age = as.numeric(current_age),
+      sex = 
+       case_match(
+         sex, 
+          "1" ~ "male", 
+          "0" ~ "female"
+       ),
+      apoe4 = 
+        case_match(
+          apoe4,
+          "1" ~ "Carrier",
+          "0" ~ "Non-carrier"
+        )
+    ) |> 
+  filter(age_at_onset != ".")
+
+
+nrow(filter(demo,sex == "female", apoe4 == "Carrier"))/nrow(filter(demo,sex == "female"))
+```
+
+By default, R read in the first row as the column names for the dataset during the initial import. However,
+this row contained information regarding how to read the data in the table, and the actual column names were
+in the second row. During cleaning, this had to be addressed first before moving onto cleaning the individual
+columns otherwise it would've created a more tedious process. In the read_csv() function, reading in the column names was set to false and the first row was deleted. Then the janitor::row_to_names() function was used to convert the new first row of data (originally the second row) into the column names. After these two steps, the routine steps for data cleaning were employed such as cleaning the column names, converting the data in the `sex` and `apoe4` columns from numeric to character and removing any rows that didn't meet the eligibility criteria (`age_at_onset = .`). The dataset also included the current age of the participant (`current_age`) and years of education (`education`), besides their sex, carrier status for APOE4 and age at onset of MCI.
+
+In total, `r nrow(raw_demo)` participants were recruited, and among these selected individuals, `r nrow(demo)` participants developed MCI.
+
+The average baseline age is `r filter(demo) |> pull(current_age) |> mean() |> round(2)` years.
+
+The proportion of women in the study that are APOE4 carriers is `nrow(filter(demo,sex == "female", apoe4 == "Carrier"))/nrow(filter(demo,sex == "female"))`.
+
+Import, clean, and tidy the dataset of longitudinally observed biomarker values
+
+```{r}
+
+```
+
+comment on the steps on the import process and the features of the dataset.
+
+Check whether some participants appear in only the baseline or amyloid datasets, and comment on your findings. Combine the demographic and biomarker datasets so that only participants who appear in both datasets are retained, and briefly describe the resulting dataset; export the result as a CSV to your data directory
