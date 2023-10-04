@@ -252,4 +252,3 @@ The proportion of participants that were identified as Carriers for APOE4 is `r 
 ```{r}
 write_csv(demo_amyloid_both, "data/demo_amyloid_combined.csv")
 ```
-
